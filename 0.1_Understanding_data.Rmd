@@ -1,0 +1,172 @@
+---
+title: "Untitled"
+author: "Prasad"
+date: "2025-04-21"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Loading the dataset and libraries 
+
+```{r}
+library(arrow)
+library(tidyverse)
+
+
+house_df = read_parquet("https://intro-datascience.s3.us-east-2.amazonaws.com/SC-data/static_house_info.parquet")
+
+energy_df <- read_parquet("https://intro-datascience.s3.us-east-2.amazonaws.com/SC-data/2023-houseData/102063.parquet")
+
+weather_df <- read_csv("https://intro-datascience.s3.us-east-2.amazonaws.com/SC-data/weather/2023-weather-data/G4500010.csv")
+
+metadata <- read_csv("https://intro-datascience.s3.us-east-2.amazonaws.com/SC-data/data_dictionary.csv")
+```
+# Dropping all irrelavent columns 
+
+```{r}
+
+# colnames(house_df)
+# summary(house_df)
+
+library(dplyr)
+
+# Keeping the neccessary columns only 
+house_df_clean <- house_df %>%
+  select(
+    bldg_id,
+    in.county,
+    in.sqft,
+    in.bedrooms,
+    in.occupants,
+    in.income,
+    in.federal_poverty_level,
+    in.cooling_setpoint,
+    in.cooling_setpoint_offset_magnitude,
+    in.heating_setpoint,
+    in.hvac_heating_type,
+    in.hvac_cooling_type,
+    in.hvac_heating_efficiency,
+    in.hvac_cooling_efficiency,
+    in.ceiling_fan,
+    in.clothes_dryer,
+    in.refrigerator,
+    in.dishwasher,
+    in.lighting,
+    in.water_heater_fuel,
+    in.clothes_washer,
+    in.insulation_wall,
+    in.insulation_ceiling,
+    in.infiltration,
+    in.plug_loads,
+    in.natural_ventilation,
+    in.range_spot_vent_hour,
+    in.bathroom_spot_vent_hour,
+    in.has_pv,
+    in.vintage,
+    in.vintage_acs
+  )
+
+# colnames(house_df_clean)
+# 
+# colSums(is.na(house_df_clean))
+
+house_df_clean <- na.omit(house_df_clean)
+```
+
+# Cleaning the Energy_df 
+
+```{r}
+# colnames(energy_df)
+
+energy_df_clean <- energy_df %>%
+  select(
+    out.electricity.cooling.energy_consumption,
+    out.electricity.heating.energy_consumption,
+    out.electricity.lighting_interior.energy_consumption,
+    out.electricity.plug_loads.energy_consumption,
+    out.electricity.refrigerator.energy_consumption,
+    out.electricity.clothes_dryer.energy_consumption,
+    out.electricity.clothes_washer.energy_consumption,
+    out.electricity.dishwasher.energy_consumption,
+    out.electricity.hot_water.energy_consumption,
+    time
+  )
+# colnames(energy_df_clean)
+
+# colSums(is.na(energy_df_clean))
+
+
+energy_df_clean <- na.omit(energy_df_clean)
+
+energy_df_clean$total_energy_usage <- rowSums(select(energy_df_clean, -time))
+
+energy_df_clean$time <- as.POSIXct(energy_df_clean$time, format = "%Y-%m-%d %H:%M:%S", tz = "UTC")
+
+energy_df_july <- energy_df_clean[
+  format(energy_df_clean$time, "%Y-%m") == "2018-07",
+]
+```
+
+# Cleaning the weather_df 
+
+
+```{r}
+#colnames(weather_df)
+
+
+weather_df_clean <- weather_df %>%
+  select(
+    date_time,
+    `Dry Bulb Temperature [°C]`,
+    `Relative Humidity [%]`,
+    `Wind Speed [m/s]`
+  )
+
+# colnames(weather_df_clean)
+# 
+# colSums(is.na(weather_df_clean))
+# 
+
+weather_df_clean <- na.omit(weather_df_clean)
+
+weather_df_clean <- weather_df_clean %>%
+  rename(time = date_time) %>%
+  mutate(time = as.POSIXct(time, format = "%Y-%m-%d %H:%M:%S", tz = "UTC"))
+
+
+weather_df_july <- weather_df_clean[
+  format(weather_df_clean$time, "%Y-%m") == "2018-07",
+  ]
+
+```
+
+
+# Merging the energy and weather dataframes and adding the building column to use it in next df merge
+
+```{r}
+energy_weather_df = merge.data.frame(energy_df_july, weather_df_july, by = "time")
+
+energy_weather_df$bldg_id <- 102063
+
+energy_weather_df <- energy_weather_df[, c("bldg_id", setdiff(names(energy_weather_df), "bldg_id"))]
+
+
+```
+
+
+# Creating the final_df 
+
+```{r}
+final_merge_df = merge.data.frame(house_df_clean, energy_weather_df, by = "bldg_id")
+```
+
+
+
+
+
+
+
+

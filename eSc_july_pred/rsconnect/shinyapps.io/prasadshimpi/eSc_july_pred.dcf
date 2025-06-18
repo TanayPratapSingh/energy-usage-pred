@@ -1,0 +1,13 @@
+name: eSc_july_pred
+title: eSc_july_pred
+username: prasadshimpi
+account: prasadshimpi
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 14651334
+bundleId: 10209541
+url: https://prasadshimpi.shinyapps.io/eSc_july_pred/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: final_combined_dataset01.rds|final_rf_model_fast.R
